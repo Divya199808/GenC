@@ -1,0 +1,122 @@
+
+<html>
+    <head>
+        <title>ACTB Portal</title>
+        <style>
+        
+            body{
+                background-color: #EED426;
+            }
+            h1{
+                color:#006666;
+                font-family: verdana;
+                text-align:center;
+                
+            }
+            table.center{
+                margin-left: auto;
+                margin-right: auto;}
+           
+            table#rentalcost{
+                border: 1;
+                border-style: solid;
+              
+                text-align:  center;
+                
+            }
+          
+           result{
+               text-align: center;
+           }
+           div{
+               text-align: center;
+           }
+        </style>
+    </head>
+    <body>
+      
+            <h1>ACTB Connection Portal</h1><br><br>
+            <form>
+              <div>
+            <label>Customer Name</label>
+            <input type="text" placeholder="Enter the customer name" name="custname" required>
+            <br><br>
+            
+            <label>Customer Email</label>
+            <input type="email" placeholder="abc@gmail.com" name="email" required>
+            <br><br>
+            
+            <label>Mobile Number</label>
+            <input type="text" maxlength="10" pattern="[7-9]{1}[0-9]{9}" placeholder="Enter the Mobile Number" name="mobile" required>
+            <br><br>
+            
+            <label>Type of Broadband </label>
+            <select id="connectiontype" name="conntype">
+                <option value="Pre">Pre</option>
+                <option value="Post">Post</option>
+            </select>
+            <br><br>
+            
+            <label>Scheme Name</label>
+            <input type="radio" name="scheme" id="scheme1" value="Local">Local
+            <input type="radio" name="scheme" id="scheme2" value="STD">STD
+            <input type="radio" name="scheme" id="scheme3" value="FullTalkTime">FullTalkTime
+            <br><br>
+            
+            <label>Connection Duration</label>
+            <input type="number" name="duration" min="1" max="12" id="duration">
+            <br><br>
+            
+            <input type="button" name="submit" value="Calculate Bill Amount" onclick="bill()">
+            <input type="Reset" name="clear" value="Reset">
+            <br><br>
+           </div>
+        </form>
+        
+        <div id="result" class="result">
+        <table id="rentalcost" class="center" value="rentalcost" border="1" align="center">
+            <caption>Rental Cost Table</caption>
+            <tr>
+                <th>Connection Type</th>
+                <th>Call Limit</th>
+                <th>Monthly Rental</th>
+            </tr>
+            
+            <tr>
+                <td>Pre</td>
+                <td>500</td>
+                <td>75</td>
+            </tr>
+            
+            <tr>
+                <td>Post</td>
+                <td>Unlimited</td>
+                <td>150</td>
+            </tr>
+            
+        </table>
+        </div>
+        <script>
+            function bill() {
+                var duration=document.getElementById("duration").value;
+                if(document.getElementById("scheme1").checked==true)
+                    var cost=200;
+                    
+                else if(document.getElementById("scheme2").checked==true)
+                    var cost=350;
+                    
+                else
+                    var cost=500;
+                    
+                if(document.getElementById("connectiontype").value==="Pre")
+                    var type=75;
+                    
+                else
+                    var type=150;
+                    
+                var total=(duration*cost)+type;
+                document.getElementById("result").innerHTML="The Total Monthly Rental Cost is Rs. "+total;
+            }
+        </script>
+    </body>
+</html>
