@@ -1,0 +1,264 @@
+db handler.........
+import java.io.FileInputStream;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+
+public class DBHandler {
+	public Connection establishConnection() {
+		try {
+			FileInputStream fileInputStream = new FileInputStream("db.properties");
+			Properties properties = new Properties();
+			properties.load(fileInputStream);
+
+			Class.forName(properties.getProperty("db.classname"));
+
+			return DriverManager.getConnection(
+					properties.getProperty("db.url"),
+					properties.getProperty("db.username"),
+					properties.getProperty("db.password")
+			);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+}
+
+
+
+
+
+electricitybill.java................
+public class ElectricityBill {
+    private String consumerNumber;
+    private String consumerName;
+    private String consumerAddress;
+    private int unitsConsumed;
+    private double billAmount;
+
+    public String getConsumerNumber() {
+        return consumerNumber;
+    }
+
+    public void setConsumerNumber(String consumerNumber) {
+        this.consumerNumber = consumerNumber;
+    }
+
+    public String getConsumerName() {
+        return consumerName;
+    }
+
+    public void setConsumerName(String consumerName) {
+        this.consumerName = consumerName;
+    }
+
+    public String getConsumerAddress() {
+        return consumerAddress;
+    }
+
+    public void setConsumerAddress(String consumerAddress) {
+        this.consumerAddress = consumerAddress;
+    }
+
+    public int getUnitsConsumed() {
+        return unitsConsumed;
+    }
+
+    public void setUnitsConsumed(int unitsConsumed) {
+        this.unitsConsumed = unitsConsumed;
+    }
+
+    public double getBillAmount() {
+        return billAmount;
+    }
+
+    public void setBillAmount(double billAmount) {
+        this.billAmount = billAmount;
+    }
+
+    public void calculateBillAmount() {
+        billAmount = 0;
+        int tempUnits = unitsConsumed;
+
+
+        if (tempUnits > 100) {
+            tempUnits -= 100;
+
+            if (tempUnits > 200) {
+                tempUnits -= 200;
+                billAmount += 200 * 1.5;
+
+                if (tempUnits > 300) {
+                    tempUnits -= 300;
+                    billAmount += 300 * 3.5;
+
+                    if (tempUnits > 400) {
+                        tempUnits -= 400;
+                        billAmount += 400 * 5.5;
+                        billAmount += tempUnits * 7.5;
+                    } else {
+                        billAmount += tempUnits * 5.5;
+                    }
+                } else {
+                    billAmount += tempUnits * 3.5;
+                }
+            } else {
+                billAmount += tempUnits * 1.5;
+            }
+        }
+    }
+}
+
+
+
+
+ElectricityBoard......
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class ElectricityBoard {
+    public boolean validate(String consumerNumber) throws InvalidConsumerNumberException {
+        Pattern pattern = Pattern.compile("^0\\d{9}$");
+        Matcher matcher = pattern.matcher(consumerNumber);
+
+        if (matcher.matches()) {
+            return true;
+        } else {
+            throw new InvalidConsumerNumberException("Invalid Consumer Number");
+        }
+    }
+
+
+    public void addBill(List<ElectricityBill> billList) {
+        Connection connection = new DBHandler().establishConnection();
+
+        try {
+            for (ElectricityBill bill : billList) {
+                PreparedStatement preparedStatement = connection.prepareStatement("insert into ElectricityBill values(?,?,?,?,?);");
+                preparedStatement.setString(1, bill.getConsumerNumber());
+                preparedStatement.setString(2, bill.getConsumerName());
+                preparedStatement.setString(3, bill.getConsumerAddress());
+                preparedStatement.setInt(4, bill.getUnitsConsumed());
+                preparedStatement.setFloat(5, (float) bill.getBillAmount());
+
+                int result = preparedStatement.executeUpdate();
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public List<ElectricityBill> generateBill(String filePath) {
+        List<ElectricityBill> electricityBills = new ArrayList<>();
+
+        try {
+            Scanner scanner = new Scanner(new BufferedReader(new FileReader(filePath)));
+
+            while (scanner.hasNext()) {
+                String[] inputs = scanner.nextLine().split(",");
+
+                try {
+                    String consumerNumber = inputs[0];
+                    boolean validConsumerNumber = validate(consumerNumber);
+
+                    if (validConsumerNumber) {
+                        String consumerName = inputs[1];
+                        String consumerAddress = inputs[2];
+                        int unitsConsumed = Integer.parseInt(inputs[3]);
+
+                        ElectricityBill electricityBill = new ElectricityBill();
+                        electricityBill.setConsumerNumber(consumerNumber);
+                        electricityBill.setConsumerName(consumerName);
+                        electricityBill.setConsumerAddress(consumerAddress);
+                        electricityBill.setUnitsConsumed(unitsConsumed);
+                        electricityBill.calculateBillAmount();
+                        electricityBills.add(electricityBill);
+                    }
+                } catch (InvalidConsumerNumberException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+
+        return electricityBills;
+    }
+
+}
+
+
+
+
+InvalidConsumerNumberException......
+public class InvalidConsumerNumberException extends Exception {
+    public InvalidConsumerNumberException(String message) {
+        super(message);
+    }
+}
+
+
+
+
+
+main.java.....
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.List;
+
+public class Main {
+    public static void main(String[] args) throws SQLException {
+        ElectricityBoard electricityBoard = new ElectricityBoard();
+
+        List<ElectricityBill> billList = electricityBoard.generateBill("ElectricityBill.txt");
+
+        System.out.println("Bills parsed from file...");
+        for (ElectricityBill bill : billList) {
+            System.out.println(String.format("id: %s, name: %s, address: %s, units: %d, bill: %f",
+                    bill.getConsumerNumber(),
+                    bill.getConsumerName(),
+                    bill.getConsumerAddress(),
+                    bill.getUnitsConsumed(),
+                    bill.getBillAmount())
+            );
+        }
+
+        // Adding bills to the database
+        electricityBoard.addBill(billList);
+
+        Connection connection = new DBHandler().establishConnection();
+        Statement statement = connection.createStatement();
+        ResultSet resultSet = statement.executeQuery("select * from ElectricityBill");
+
+        System.out.println("Bills retrieved from database ElectricityBill...");
+
+        while (resultSet.next()) {
+            String consumerNumber = resultSet.getString(1);
+            String consumerName = resultSet.getString(2);
+            String consumerAddress = resultSet.getString(3);
+            int unitsConsumed = resultSet.getInt(4);
+            float billAmount = resultSet.getFloat(5);
+
+            System.out.println(String.format("id: %s, name: %s, address: %s, units: %d, bill: %f",
+                    consumerNumber,
+                    consumerName,
+                    consumerAddress,
+                    unitsConsumed,
+                    billAmount)
+            );
+        }
+    }
+}
